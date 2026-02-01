@@ -6,6 +6,16 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'manage'
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStats, setUploadStats] = useState({ loaded: 0, total: 0 });
+  
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const [formData, setFormData] = useState({
     written_by: 'Dashrath Nandan',
     subject: '',
@@ -87,6 +97,7 @@ const Dashboard = () => {
           if (event.lengthComputable) {
             const percentComplete = Math.round((event.loaded / event.total) * 100);
             setUploadProgress(percentComplete);
+            setUploadStats({ loaded: event.loaded, total: event.total });
           }
         };
 
@@ -325,8 +336,13 @@ const Dashboard = () => {
 
               <button type="submit" className="btn btn-primary" disabled={uploading} style={{ position: 'relative', overflow: 'hidden' }}>
                 {uploading ? (
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 2, position: 'relative' }}>
-                    <span>Uploading... {uploadProgress}%</span>
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2, position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>Uploading... {uploadProgress}%</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                      {formatBytes(uploadStats.loaded)} / {formatBytes(uploadStats.total)}
+                    </div>
                   </div>
                 ) : (
                   <><FileText size={18} /> Upload Note</>
