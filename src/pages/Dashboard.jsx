@@ -5,6 +5,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X } from 'lu
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'manage'
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [formData, setFormData] = useState({
     written_by: 'Dashrath Nandan',
     subject: '',
@@ -57,27 +58,57 @@ const Dashboard = () => {
       return;
     }
 
-    setUploading(true);
-    setMessage(null);
-
+    // -----------------------------------------------------------------------
+    // REAL UPLOAD WITH PROGRESS (using XHR)
+    // -----------------------------------------------------------------------
     try {
-      // 1. Upload file to Storage
+      setUploading(true);
+      setUploadProgress(0);
+      setMessage(null);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
+      
+      // 1. Get Session for Auth Token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      const { error: uploadError } = await supabase.storage
-        .from('notes')
-        .upload(filePath, file);
+      // 2. Upload via XHR for Progress Tracking
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/notes/${filePath}`;
+        
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+        xhr.setRequestHeader('Content-Type', file.type); 
 
-      if (uploadError) throw uploadError;
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percentComplete);
+          }
+        };
 
-      // 2. Get Public URL
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.response);
+          } else {
+            reject(new Error(`Upload failed: ${xhr.statusText}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        
+        xhr.send(file); 
+      });
+
+      // 3. Get Public URL (Standard Supabase)
       const { data: { publicUrl } } = supabase.storage
         .from('notes')
         .getPublicUrl(filePath);
 
-      // 3. Insert into Database
+      // 4. Insert into Database
       const { error: dbError } = await supabase
         .from('notes')
         .insert([
@@ -91,6 +122,7 @@ const Dashboard = () => {
 
       if (dbError) throw dbError;
 
+      setUploadProgress(100);
       setMessage({ type: 'success', text: 'Note uploaded successfully!' });
       setFormData({ written_by: 'Dashrath Nandan', subject: '', semester: '1' });
       setFile(null);
@@ -99,9 +131,10 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Upload error:', error);
       setMessage({ type: 'error', text: error.message || 'Error uploading note.' });
-    } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
+    // No finally block needed here as we handle state in try/catch
   };
 
   const [deleteConfirm, setDeleteConfirm] = useState(null); // ID of note to delete
@@ -290,11 +323,27 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={uploading}>
+              <button type="submit" className="btn btn-primary" disabled={uploading} style={{ position: 'relative', overflow: 'hidden' }}>
                 {uploading ? (
-                  <div className="loading-spinner" style={{ width: '1.2rem', height: '1.2rem', borderWidth: '2px' }} />
+                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 2, position: 'relative' }}>
+                    <span>Uploading... {uploadProgress}%</span>
+                  </div>
                 ) : (
                   <><FileText size={18} /> Upload Note</>
+                )}
+                
+                {/* Progress Bar Background */}
+                {uploading && (
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    height: '100%',
+                    width: `${uploadProgress}%`,
+                    background: 'rgba(255,255,255,0.2)',
+                    transition: 'width 0.5s ease-in-out',
+                    zIndex: 1
+                  }} />
                 )}
               </button>
             </form>
