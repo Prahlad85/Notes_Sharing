@@ -1,15 +1,56 @@
 import React from 'react';
-import { FileText, Download, Eye } from 'lucide-react';
+import { FileText, Download, Eye, Share2 } from 'lucide-react';
 
 const NoteCard = ({ note, onView }) => {
   const date = new Date(note.created_at).toLocaleDateString();
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    const shareData = {
+      title: note.subject,
+      text: `Check out this note: ${note.subject} by ${note.written_by}`,
+      url: note.file_url
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+           console.error('Error sharing:', err);
+        }
+      }
+    } else {
+      // Fallback
+      navigator.clipboard.writeText(note.file_url);
+      alert('Link copied to clipboard!');
+    }
+  };
 
   return (
     <div className="note-card animate-fade-in">
       <div className="note-header">
         <div className="badge">Sem {note.semester}</div>
-        <div className="note-icon">
-          <FileText size={20} />
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={handleShare}
+            className="btn btn-ghost"
+            style={{ 
+              padding: '0.4rem', 
+              height: '36px', 
+              width: '36px', 
+              borderRadius: '0.5rem',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}
+            title="Share"
+          >
+            <Share2 size={18} />
+          </button>
+          <div className="note-icon">
+            <FileText size={20} />
+          </div>
         </div>
       </div>
       
