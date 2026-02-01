@@ -248,7 +248,7 @@ const Dashboard = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>File (PDF - Max 50MB)</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>File (PDF - Max 100MB)</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     id="file-upload"

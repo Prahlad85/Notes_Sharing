@@ -37,6 +37,9 @@ function App() {
           marginTop: 'auto'
         }}>
           <p>© {new Date().getFullYear()} NoteShare. Built for Engineers.</p>
+          <div style={{ marginTop: '0.5rem' }}>
+            <a href="/login" style={{ fontSize: '0.8rem', opacity: 0.7 }}>Admin Access</a>
+          </div>
         </footer>
       </div>
     </Router>

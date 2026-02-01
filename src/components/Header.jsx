@@ -128,12 +128,12 @@ const Header = () => {
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={toggleTheme} className="btn btn-ghost" style={{ padding: '0.5rem' }}>
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           
-          <Link to="/login" className="btn btn-ghost" style={{ fontSize: '0.9rem' }}>Admin</Link>
+          {/* Admin link removed from here */}
         </div>
       </div>
     </header>

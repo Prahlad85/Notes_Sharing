@@ -229,8 +229,18 @@ a {
 
 @media (max-width: 768px) {
   .search-container {
+    width: 60%;
+    /* Adjust width for mobile */
+    margin: 0 0.5rem;
+  }
+
+  .search-input {
+    padding-left: 2.5rem;
+  }
+
+  .logo span {
     display: none;
-    /* Can implement mobile search later if needed */
+    /* Hide logo text on small screens to save space */
   }
 }
 
