@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileText, Download, Eye } from 'lucide-react';
 
-const NoteCard = ({ note }) => {
+const NoteCard = ({ note, onView }) => {
   const date = new Date(note.created_at).toLocaleDateString();
 
   return (
@@ -25,14 +25,12 @@ const NoteCard = ({ note }) => {
       </div>
 
       <div className="note-actions">
-        <a 
-          href={note.file_url} 
-          target="_blank" 
-          rel="noreferrer"
+        <button 
+          onClick={() => onView(note)}
           className="btn btn-outline btn-full"
         >
           <Eye size={16} /> View
-        </a>
+        </button>
         
         {/* For direct download, we add 'download' attribute, 
             though for some cloud providers this requires response header config */}

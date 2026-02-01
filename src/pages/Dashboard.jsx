@@ -104,8 +104,16 @@ const Dashboard = () => {
     }
   };
 
-  const handleDelete = async (id, fileUrl) => {
-    if (!window.confirm('Are you sure you want to delete this note?')) return;
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // ID of note to delete
+
+  // Trigger modal
+  const handleDeleteClick = (id) => {
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const id = deleteConfirm;
 
     try {
       // 1. Delete from Database
@@ -116,18 +124,22 @@ const Dashboard = () => {
 
       if (dbError) throw dbError;
 
-      // 2. Delete from Storage (Optional but recommended)
-      // Extract filename from URL
-      const fileName = fileUrl.split('/').pop();
-      if (fileName) {
-          await supabase.storage.from('notes').remove([fileName]);
+      // 2. Delete from Storage (Find URL to get filename)
+      const noteToDelete = notes.find(n => n.id === id);
+      if (noteToDelete) {
+        const fileName = noteToDelete.file_url.split('/').pop();
+        if (fileName) {
+            await supabase.storage.from('notes').remove([fileName]);
+        }
       }
 
       setNotes(notes.filter(n => n.id !== id));
-      alert('Note deleted.');
+      // alert('Note deleted.'); // No alert needed with modal
     } catch (error) {
       console.error('Delete error:', error);
       alert('Failed to delete note.');
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -324,7 +336,7 @@ const Dashboard = () => {
                         </button>
                         <button 
                           className="btn btn-danger"
-                          onClick={() => handleDelete(note.id, note.file_url)}
+                          onClick={() => handleDeleteClick(note.id)}
                           style={{ padding: '0.5rem' }}
                         >
                           <Trash2 size={16} />
@@ -388,6 +400,68 @@ const Dashboard = () => {
               
               <button type="submit" className="btn btn-primary">Save Changes</button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }} onClick={() => setDeleteConfirm(null)}>
+          <div 
+            className="glass-panel"
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '90%',
+              maxWidth: '400px',
+              padding: '2rem',
+              textAlign: 'center',
+              border: '1px solid var(--glass-border)'
+            }}
+          >
+            <div style={{ 
+              width: '50px', 
+              height: '50px', 
+              borderRadius: '50%', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              color: '#ef4444',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              margin: '0 auto 1.5rem'
+            }}>
+              <Trash2 size={24} />
+            </div>
+            
+            <h3 style={{ marginBottom: '0.5rem', fontSize: '1.25rem' }}>Delete Note?</h3>
+            <p style={{ marginBottom: '2rem', color: 'var(--text-muted)' }}>
+              Are you sure you want to delete this note? This action cannot be undone.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button 
+                onClick={() => setDeleteConfirm(null)}
+                className="btn btn-ghost"
+                style={{ justifyContent: 'center' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="btn btn-danger"
+                style={{ justifyContent: 'center' }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
