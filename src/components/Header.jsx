@@ -49,7 +49,7 @@ const Header = () => {
           .from('notes')
           .select('*')
           .ilike('subject', `%${searchTerm}%`)
-          .limit(5);
+          .limit(20);
         
         if (error) throw error;
         setResults(data || []);
@@ -67,6 +67,16 @@ const Header = () => {
   const handleResultClick = (fileUrl) => {
     window.open(fileUrl, '_blank');
     setSearchTerm('');
+  };
+
+  // Helper to highlight text
+  const highlightText = (text, highlight) => {
+    if (!highlight.trim()) return text;
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === highlight.toLowerCase() ? 
+        <span key={i} style={{ background: 'rgba(255, 255, 0, 0.4)', color: 'inherit' }}>{part}</span> : part
+    );
   };
 
   return (
@@ -117,7 +127,7 @@ const Header = () => {
                     onMouseEnter={(e) => e.target.style.background = 'var(--bg-page)'}
                     onMouseLeave={(e) => e.target.style.background = 'transparent'}
                   >
-                    <div style={{ fontWeight: '600' }}>{note.subject}</div>
+                    <div style={{ fontWeight: '600' }}>{highlightText(note.subject, searchTerm)}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>By {note.written_by} • Sem {note.semester}</div>
                   </div>
                 ))
