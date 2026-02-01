@@ -36,9 +36,12 @@ function App() {
           borderTop: '1px solid var(--glass-border)',
           marginTop: 'auto'
         }}>
-          <p>© {new Date().getFullYear()} NoteShare. Built for Engineers.</p>
-          <div style={{ marginTop: '0.5rem' }}>
-            <a href="/login" style={{ fontSize: '0.8rem', opacity: 0.7 }}>Admin Access</a>
+          <p>© {new Date().getFullYear()} NoteShare. Built for Engineers. Developed by <a href="https://github.com/Prahlad85" target="_blank" rel="noopener noreferrer" style={{ fontWeight: '500', color: 'var(--primary)' }}>Prahlad Kumar</a></p>
+          <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+            <a href="https://grademate-one.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontWeight: '500', color: 'var(--primary)' }}>
+              Visit GradeMate
+            </a>
+            <a href="/login" style={{ fontSize: '0.8rem', opacity: 0.7, color: 'var(--primary)' }}>Admin Access</a>
           </div>
         </footer>
       </div>
