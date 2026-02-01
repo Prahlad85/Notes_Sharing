@@ -6,7 +6,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'manage'
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
+    written_by: 'Dashrath Nandan',
     subject: '',
     semester: '1',
   });
@@ -82,7 +82,7 @@ const Dashboard = () => {
         .from('notes')
         .insert([
           {
-            title: formData.title,
+            written_by: formData.written_by,
             subject: formData.subject,
             semester: parseInt(formData.semester),
             file_url: publicUrl,
@@ -92,7 +92,7 @@ const Dashboard = () => {
       if (dbError) throw dbError;
 
       setMessage({ type: 'success', text: 'Note uploaded successfully!' });
-      setFormData({ title: '', subject: '', semester: '1' });
+      setFormData({ written_by: 'Dashrath Nandan', subject: '', semester: '1' });
       setFile(null);
       document.getElementById('file-upload').value = '';
 
@@ -139,7 +139,7 @@ const Dashboard = () => {
       const { error } = await supabase
         .from('notes')
         .update({
-          title: editNote.title,
+          written_by: editNote.written_by,
           subject: editNote.subject,
           semester: editNote.semester
         })
@@ -210,18 +210,6 @@ const Dashboard = () => {
             <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Title</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. Thermodynamics Chapter 1"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                
-                <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Subject</label>
                   <input
                     type="text"
@@ -229,6 +217,18 @@ const Dashboard = () => {
                     placeholder="e.g. Physics"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Written By</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g. Prof. Smith"
+                    value={formData.written_by}
+                    onChange={(e) => setFormData({ ...formData, written_by: e.target.value })}
                     required
                   />
                 </div>
@@ -301,7 +301,7 @@ const Dashboard = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <th style={{ padding: '1rem' }}>Title</th>
+                    <th style={{ padding: '1rem' }}>Written By</th>
                     <th style={{ padding: '1rem' }}>Subject</th>
                     <th style={{ padding: '1rem' }}>Sem</th>
                     <th style={{ padding: '1rem' }}>Date</th>
@@ -311,7 +311,7 @@ const Dashboard = () => {
                 <tbody>
                   {notes.map(note => (
                     <tr key={note.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '1rem' }}>{note.title}</td>
+                      <td style={{ padding: '1rem' }}>{note.written_by}</td>
                       <td style={{ padding: '1rem' }}>{note.subject}</td>
                       <td style={{ padding: '1rem' }}>{note.semester}</td>
                       <td style={{ padding: '1rem' }}>{new Date(note.created_at).toLocaleDateString()}</td>
@@ -358,11 +358,11 @@ const Dashboard = () => {
             
             <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label>Title</label>
+                <label>Written By</label>
                 <input 
                   className="input-field"
-                  value={editNote.title} 
-                  onChange={e => setEditNote({...editNote, title: e.target.value})}
+                  value={editNote.written_by} 
+                  onChange={e => setEditNote({...editNote, written_by: e.target.value})}
                 />
               </div>
               <div>

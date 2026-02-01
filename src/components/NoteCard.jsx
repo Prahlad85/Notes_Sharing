@@ -14,9 +14,11 @@ const NoteCard = ({ note }) => {
       </div>
       
       <div style={{ marginBottom: '1rem', flex: 1 }}>
-        <h4 title={note.title}>{note.title}</h4>
+        <h4 title={note.subject} style={{ fontSize: '1.25rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+          {note.subject}
+        </h4>
         <div className="note-meta">
-          <span>{note.subject}</span>
+          <span>By {note.written_by}</span>
           <span>•</span>
           <span>{date}</span>
         </div>

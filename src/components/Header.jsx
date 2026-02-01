@@ -48,7 +48,7 @@ const Header = () => {
         const { data, error } = await supabase
           .from('notes')
           .select('*')
-          .or(`title.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`)
+          .ilike('subject', `%${searchTerm}%`)
           .limit(5);
         
         if (error) throw error;
@@ -60,7 +60,7 @@ const Header = () => {
       }
     };
 
-    const timeoutId = setTimeout(searchNotes, 300);
+    const timeoutId = setTimeout(searchNotes, 50);
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
@@ -83,7 +83,7 @@ const Header = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search notes..."
+            placeholder="Search subjects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -117,8 +117,8 @@ const Header = () => {
                     onMouseEnter={(e) => e.target.style.background = 'var(--bg-page)'}
                     onMouseLeave={(e) => e.target.style.background = 'transparent'}
                   >
-                    <div style={{ fontWeight: '600' }}>{note.title}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{note.subject} • Sem {note.semester}</div>
+                    <div style={{ fontWeight: '600' }}>{note.subject}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>By {note.written_by} • Sem {note.semester}</div>
                   </div>
                 ))
               ) : (
