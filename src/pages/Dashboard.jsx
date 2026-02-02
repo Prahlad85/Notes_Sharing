@@ -29,11 +29,9 @@ const Dashboard = () => {
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [editNote, setEditNote] = useState(null); // Note object being edited
 
-  // Fetch notes when switching to Manage tab
+  // Fetch notes on mount AND tab change to keep stats fresh
   useEffect(() => {
-    if (activeTab === 'manage') {
-      fetchNotes();
-    }
+    fetchNotes();
   }, [activeTab]);
 
   const fetchNotes = async () => {
@@ -216,7 +214,10 @@ const Dashboard = () => {
     <div className="container" style={{ paddingTop: '100px', paddingBottom: '4rem' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Admin Dashboard</h2>
+        <div>
+          <h2 style={{ fontSize: '2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Admin Dashboard</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Welcome back, Admin</p>
+        </div>
         <button 
           onClick={() => supabase.auth.signOut()} 
           className="btn btn-danger"
@@ -225,24 +226,74 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', color: '#3b82f6' }}>
+            <FileText size={24} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '2rem', margin: 0 }}>{notes.length}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Total Notes</p>
+          </div>
+        </div>
+        
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', color: '#10b981' }}>
+            <CheckCircle size={24} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '2rem', margin: 0 }}>Active</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Server Status</p>
+          </div>
+        </div>
+
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+           <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', color: '#ef4444' }}>
+            <AlertCircle size={24} />
+          </div>
+          <div>
+             <h3 style={{ fontSize: '1rem', margin: '0 0 0.2rem 0' }}>Notice Board</h3>
+             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0 }}>Update Exam News</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern Tabs */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '0.5rem', 
+        marginBottom: '2rem', 
+        borderBottom: '1px solid var(--border-color)', 
+        overflowX: 'auto',
+        paddingBottom: '0.5rem'
+      }}>
         <button 
           className={`btn ${activeTab === 'upload' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('upload')}
+          style={{ flex: 1, justifyContent: 'center' }}
         >
-          <Upload size={18} /> Upload Notes
+          <Upload size={18} /> Upload
         </button>
         <button 
           className={`btn ${activeTab === 'manage' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('manage')}
+          style={{ flex: 1, justifyContent: 'center' }}
         >
-          <Edit2 size={18} /> Manage Notes
+          <Edit2 size={18} /> Notes List
+        </button>
+        <button 
+          className={`btn ${activeTab === 'notice' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveTab('notice')}
+          style={{ flex: 1, justifyContent: 'center' }}
+        >
+          <AlertCircle size={18} /> Notices
         </button>
       </div>
 
       {activeTab === 'upload' ? (
         <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
+          {/* ... Upload Code ... */}
           <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Upload New Note</h3>
             
@@ -264,6 +315,7 @@ const Dashboard = () => {
             )}
 
             <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+               {/* ... (Existing Form Content) ... */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Subject</label>
@@ -348,7 +400,6 @@ const Dashboard = () => {
                   <><FileText size={18} /> Upload Note</>
                 )}
                 
-                {/* Progress Bar Background */}
                 {uploading && (
                   <div style={{
                     position: 'absolute',
@@ -365,7 +416,7 @@ const Dashboard = () => {
             </form>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'manage' ? (
         /* MANAGE TAB */
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <h3>Manage Notes</h3>
@@ -414,6 +465,9 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+      ) : (
+        /* NOTICE TAB */
+        <NoticeManager />
       )}
 
       {/* Edit Modal */}
@@ -531,6 +585,75 @@ const Dashboard = () => {
         </div>
       )}
 
+    </div>
+  );
+};
+
+const NoticeManager = () => {
+  const [notice, setNotice] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchNotice();
+  }, []);
+
+  const fetchNotice = async () => {
+    const { data } = await supabase.from('notices').select('*').eq('id', 1).single();
+    if (data) {
+      setNotice(data.content);
+      setIsActive(data.is_active);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Upsert ID 1
+    const { error } = await supabase.from('notices').upsert({
+      id: 1,
+      content: notice,
+      is_active: isActive
+    });
+
+    if (error) {
+      alert('Error updating notice');
+    } else {
+      alert('Notice updated! It will appear on the marquee.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="glass-panel" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+      <h3 style={{ marginBottom: '1.5rem' }}>Update Notice Board</h3>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Notice Message</label>
+          <input 
+            className="input-field"
+            value={notice}
+            onChange={(e) => setNotice(e.target.value)}
+            placeholder="e.g. Next Exam: Maths - 5 Days Left!"
+          />
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input 
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+            id="active-check"
+            style={{ width: '1.2rem', height: '1.2rem' }}
+          />
+          <label htmlFor="active-check">Show on Home Page</label>
+        </div>
+
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? 'Saving...' : 'Update Notice'}
+        </button>
+      </form>
     </div>
   );
 };
