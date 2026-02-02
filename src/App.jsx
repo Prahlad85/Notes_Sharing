@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { supabase } from './lib/supabaseClient';
 import Header from './components/Header';
 import Home from './pages/Home';
 import SemesterNotes from './pages/SemesterNotes';
@@ -9,6 +10,29 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css'; // Importing empty file just to be safe
 
 function App() {
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/'; // Redirect to home
+  };
+
   return (
     <Router>
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -41,7 +65,25 @@ function App() {
             <a href="https://grademate-one.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontWeight: '500', color: 'var(--primary)' }}>
               Visit GradeMate
             </a>
-            <a href="/login" style={{ fontSize: '0.8rem', opacity: 0.7, color: 'var(--primary)' }}>Admin Access</a>
+            
+            {session ? (
+              <button 
+                onClick={handleLogout} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  fontSize: '0.8rem', 
+                  opacity: 0.7, 
+                  color: 'var(--primary)', 
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                Sign Out
+              </button>
+            ) : (
+              <a href="/login" style={{ fontSize: '0.8rem', opacity: 0.7, color: 'var(--primary)' }}>Admin Access</a>
+            )}
           </div>
         </footer>
       </div>
