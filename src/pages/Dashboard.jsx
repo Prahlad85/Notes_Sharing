@@ -227,12 +227,7 @@ const Dashboard = () => {
       }}>
         <div>
           <h2 style={{ fontSize: '2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>Admin Dashboard</h2>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Welcome back, Admin</p>
-            <Link to="/" className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', height: 'auto', borderRadius: '9999px' }}>
-              <Home size={14} /> Opens in Public Mode
-            </Link>
-          </div>
+            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Welcome back, Dashrath</p>
         </div>
         <button 
           onClick={() => supabase.auth.signOut()} 

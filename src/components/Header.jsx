@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard, Home } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const Header = () => {
@@ -11,6 +11,7 @@ const Header = () => {
   const [darkMode, setDarkMode] = useState(false);
   // const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Unused
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Dark Mode Logic
   useEffect(() => {
@@ -159,9 +160,15 @@ const Header = () => {
           </button>
           
           {user && (
-            <Link to="/admin" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
-               <LayoutDashboard size={16} /> Dashboard
-            </Link>
+            location.pathname === '/admin' ? (
+              <Link to="/" className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                <Home size={16} /> Home
+              </Link>
+            ) : (
+              <Link to="/admin" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                 <LayoutDashboard size={16} /> Dashboard
+              </Link>
+            )
           )}
           
           {/* Admin link removed from here */}
