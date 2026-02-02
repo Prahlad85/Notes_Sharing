@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, GraduationCap, Sun, Moon, Menu, X } from 'lucide-react';
+import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -35,6 +35,20 @@ const Header = () => {
       setDarkMode(true);
     }
   };
+
+  // Check Auth State for "Back to Dashboard" button
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Search Logic
   useEffect(() => {
@@ -143,6 +157,12 @@ const Header = () => {
           <button onClick={toggleTheme} className="btn btn-ghost" style={{ padding: '0.5rem' }}>
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
+          
+          {user && (
+            <Link to="/admin" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+               <LayoutDashboard size={16} /> Dashboard
+            </Link>
+          )}
           
           {/* Admin link removed from here */}
         </div>

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'manage'
   const [uploading, setUploading] = useState(false);
+  // ... (rest of state)
+
+
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStats, setUploadStats] = useState({ loaded: 0, total: 0 });
   
@@ -211,18 +215,31 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container" style={{ paddingTop: '100px', paddingBottom: '4rem' }}>
+    <div className="container animate-fade-in" style={{ paddingTop: '100px', paddingBottom: '4rem' }}>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="dashboard-header" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '2rem',
+        flexWrap: 'wrap',
+        gap: '1rem' 
+      }}>
         <div>
-          <h2 style={{ fontSize: '2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Admin Dashboard</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Welcome back, Admin</p>
+          <h2 style={{ fontSize: '2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>Admin Dashboard</h2>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Welcome back, Admin</p>
+            <Link to="/" className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', height: 'auto', borderRadius: '9999px' }}>
+              <Home size={14} /> Opens in Public Mode
+            </Link>
+          </div>
         </div>
         <button 
           onClick={() => supabase.auth.signOut()} 
           className="btn btn-danger"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
-          Sign Out
+          <LogOut size={16} /> Sign Out
         </button>
       </div>
 
