@@ -30,7 +30,12 @@ const NoteCard = ({ note, onView }) => {
   return (
     <div className="note-card animate-fade-in">
       <div className="note-header">
-        <div className="badge">Sem {note.semester}</div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="badge">Sem {note.semester}</div>
+          <div className="badge" style={{ background: 'var(--primary)', color: 'white' }}>
+            {note.exam_type === 'Class Note' ? 'Note' : (note.exam_type || 'Note')}
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button 
             onClick={handleShare}

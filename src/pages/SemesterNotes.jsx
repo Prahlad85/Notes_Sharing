@@ -114,13 +114,21 @@ const SemesterNotes = () => {
                </button>
              </div>
              
-             {/* PDF Container */}
-             <div style={{ flex: 1, background: '#333', position: 'relative' }}>
-               <iframe 
-                 src={viewNote.file_url} 
-                 style={{ width: '100%', height: '100%', border: 'none' }}
-                 title="PDF Preview"
-               />
+             {/* PDF/Image Container */}
+             <div style={{ flex: 1, background: '#333', position: 'relative', overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               {viewNote.file_url.toLowerCase().endsWith('.pdf') ? (
+                 <iframe 
+                   src={viewNote.file_url} 
+                   style={{ width: '100%', height: '100%', border: 'none' }}
+                   title="PDF Preview"
+                 />
+               ) : (
+                 <img 
+                   src={viewNote.file_url} 
+                   alt="Note Preview" 
+                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                 />
+               )}
              </div>
            </div>
         </div>

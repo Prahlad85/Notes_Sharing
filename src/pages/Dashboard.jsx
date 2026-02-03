@@ -24,9 +24,13 @@ const Dashboard = () => {
     written_by: 'Dashrath Nandan',
     subject: '',
     semester: '1',
+    exam_type: 'Class Note', // Default
   });
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]); // Array of files
+  const [currentFileIndex, setCurrentFileIndex] = useState(0); 
   const [message, setMessage] = useState(null); 
+  const [filterType, setFilterType] = useState('All');
+  const [filterSemester, setFilterSemester] = useState('All');
   
   // Managing Notes State
   const [notes, setNotes] = useState([]);
@@ -52,102 +56,100 @@ const Dashboard = () => {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+      setFiles(Array.from(e.target.files));
     }
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) {
-      setMessage({ type: 'error', text: 'Please select a file to upload.' });
+    if (files.length === 0) {
+      setMessage({ type: 'error', text: 'Please select at least one file.' });
       return;
     }
 
-    // Check File Size (Limit to 50MB)
-    const FILE_SIZE_LIMIT = 100 * 1024 * 1024; // 50MB
-    if (file.size > FILE_SIZE_LIMIT) {
-      setMessage({ type: 'error', text: 'File exceeds 100MB limit. Please compress your PDF.' });
-      return;
-    }
-
-    // -----------------------------------------------------------------------
-    // REAL UPLOAD WITH PROGRESS (using XHR)
-    // -----------------------------------------------------------------------
     try {
       setUploading(true);
-      setUploadProgress(0);
       setMessage(null);
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
       
-      // 1. Get Session for Auth Token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      // 2. Upload via XHR for Progress Tracking
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/notes/${filePath}`;
-        
-        xhr.open('POST', url);
-        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-        xhr.setRequestHeader('Content-Type', file.type); 
+      for (let i = 0; i < files.length; i++) {
+        setCurrentFileIndex(i);
+        const file = files[i];
+        setUploadProgress(0);
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100);
-            setUploadProgress(percentComplete);
-            setUploadStats({ loaded: event.loaded, total: event.total });
-          }
-        };
+        // Size Check (50MB)
+        if (file.size > 50 * 1024 * 1024) {
+          throw new Error(`File ${file.name} exceeds 50MB limit.`);
+        }
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(xhr.response);
-          } else {
-            reject(new Error(`Upload failed: ${xhr.statusText}`));
-          }
-        };
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${i}.${fileExt}`; // Add index to avoid collision
+        const filePath = `${fileName}`;
 
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        
-        xhr.send(file); 
-      });
+        // Upload single file via XHR
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/notes/${filePath}`;
+          
+          xhr.open('POST', url);
+          xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+          xhr.setRequestHeader('Content-Type', file.type); 
 
-      // 3. Get Public URL (Standard Supabase)
-      const { data: { publicUrl } } = supabase.storage
-        .from('notes')
-        .getPublicUrl(filePath);
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(percentComplete);
+            }
+          };
 
-      // 4. Insert into Database
-      const { error: dbError } = await supabase
-        .from('notes')
-        .insert([
-          {
-            written_by: formData.written_by,
-            subject: formData.subject,
-            semester: parseInt(formData.semester),
-            file_url: publicUrl,
-          },
-        ]);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`Upload failed for ${file.name}: ${xhr.statusText}`));
+            }
+          };
 
-      if (dbError) throw dbError;
+          xhr.onerror = () => reject(new Error(`Network error uploading ${file.name}`));
+          xhr.send(file); 
+        });
 
-      setUploadProgress(100);
-      setMessage({ type: 'success', text: 'Note uploaded successfully!' });
-      setFormData({ written_by: 'Dashrath Nandan', subject: '', semester: '1' });
-      setFile(null);
+        // Get URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('notes')
+          .getPublicUrl(filePath);
+
+        // Insert Record
+        const { error: dbError } = await supabase
+          .from('notes')
+          .insert([
+            {
+              written_by: formData.written_by,
+              subject: formData.subject,
+              semester: parseInt(formData.semester),
+              exam_type: formData.exam_type || 'Class Note', // Save Exam Type
+              file_url: publicUrl,
+            },
+          ]);
+
+        if (dbError) throw dbError;
+      }
+
+      setMessage({ type: 'success', text: `Successfully uploaded ${files.length} notes!` });
+      setFormData({ ...formData, subject: '' });
+      setFiles([]);
       document.getElementById('file-upload').value = '';
 
     } catch (error) {
       console.error('Upload error:', error);
-      setMessage({ type: 'error', text: error.message || 'Error uploading note.' });
+      setMessage({ type: 'error', text: error.message || 'Error uploading notes.' });
+    } finally {
       setUploading(false);
       setUploadProgress(0);
+      setCurrentFileIndex(0);
     }
-    // No finally block needed here as we handle state in try/catch
   };
 
   const [deleteConfirm, setDeleteConfirm] = useState(null); // ID of note to delete
@@ -327,7 +329,6 @@ const Dashboard = () => {
             )}
 
             <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-               {/* ... (Existing Form Content) ... */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Subject</label>
@@ -354,26 +355,42 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Semester</label>
-                <select
-                  className="input-field"
-                  value={formData.semester}
-                  onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                    <option key={num} value={num}>Semester {num}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Semester</label>
+                  <select
+                    className="input-field"
+                    value={formData.semester}
+                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                      <option key={num} value={num}>Semester {num}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Material Type</label>
+                  <select
+                    className="input-field"
+                    value={formData.exam_type || 'Class Note'}
+                    onChange={(e) => setFormData({ ...formData, exam_type: e.target.value })}
+                  >
+                    <option value="Class Note">Note</option>
+                    <option value="MST1">MST1</option>
+                    <option value="MST2">MST2</option>
+                    <option value="Final Exam">Final Exam</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>File (PDF - Max 100MB)</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Files (PDF & Images)</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     id="file-upload"
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,image/*"
+                    multiple
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                     required
@@ -383,46 +400,38 @@ const Dashboard = () => {
                     className="input-field"
                     style={{ 
                       display: 'flex', 
+                      flexDirection: 'column',
                       alignItems: 'center', 
                       justifyContent: 'center', 
                       gap: '0.5rem', 
                       cursor: 'pointer',
                       borderStyle: 'dashed',
-                      minHeight: '100px',
+                      minHeight: '120px',
                       background: 'var(--bg-card)'
                     }}
                   >
                     <Upload size={24} color="var(--primary)" />
-                    {file ? file.name : 'Click to select PDF'}
+                    {files.length > 0 ? (
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ margin: 0, fontWeight: 'bold' }}>{files.length} file(s) selected</p>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {Array.from(files).map(f => f.name).join(', ')}
+                        </p>
+                      </div>
+                    ) : (
+                      <span>Click to select PDFs or Images</span>
+                    )}
                   </label>
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={uploading} style={{ position: 'relative', overflow: 'hidden' }}>
+              <button type="submit" className="btn btn-primary" disabled={uploading}>
                 {uploading ? (
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2, position: 'relative' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span>Uploading... {uploadProgress}%</span>
-                    </div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                      {formatBytes(uploadStats.loaded)} / {formatBytes(uploadStats.total)}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>Uploading {currentFileIndex + 1}/{files.length}... {uploadProgress}%</span>
                   </div>
                 ) : (
-                  <><FileText size={18} /> Upload Note</>
-                )}
-                
-                {uploading && (
-                  <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    height: '100%',
-                    width: `${uploadProgress}%`,
-                    background: 'rgba(255,255,255,0.2)',
-                    transition: 'width 0.5s ease-in-out',
-                    zIndex: 1
-                  }} />
+                  <><FileText size={18} /> Upload All Files</>
                 )}
               </button>
             </form>
@@ -431,7 +440,36 @@ const Dashboard = () => {
       ) : activeTab === 'manage' ? (
         /* MANAGE TAB */
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h3>Manage Notes</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <h3>Manage Notes</h3>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <select 
+                className="input-field" 
+                style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem' }}
+                onChange={(e) => setFilterSemester(e.target.value)}
+                value={filterSemester}
+              >
+                <option value="All">All Semesters</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                  <option key={num} value={num}>Sem {num}</option>
+                ))}
+              </select>
+
+              <select 
+                className="input-field" 
+                style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem' }}
+                onChange={(e) => setFilterType(e.target.value)}
+                value={filterType}
+              >
+                <option value="All">All Materials</option>
+                <option value="Class Note">Notes</option>
+                <option value="MST1">MST1 Papers</option>
+                <option value="MST2">MST2 Papers</option>
+                <option value="Final Exam">Final Exams</option>
+              </select>
+            </div>
+          </div>
+
           {loadingNotes ? (
              <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
           ) : notes.length === 0 ? (
@@ -441,18 +479,28 @@ const Dashboard = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <th style={{ padding: '1rem' }}>Written By</th>
+                    <th style={{ padding: '1rem' }}>Type</th>
                     <th style={{ padding: '1rem' }}>Subject</th>
+                    <th style={{ padding: '1rem' }}>Written By</th>
                     <th style={{ padding: '1rem' }}>Sem</th>
                     <th style={{ padding: '1rem' }}>Date</th>
                     <th style={{ padding: '1rem' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {notes.map(note => (
+                  {notes.filter(n => {
+                    const matchType = filterType === 'All' || n.exam_type === filterType;
+                    const matchSem = filterSemester === 'All' || n.semester.toString() === filterSemester.toString();
+                    return matchType && matchSem;
+                  }).map(note => (
                     <tr key={note.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '1rem' }}>{note.written_by}</td>
+                      <td style={{ padding: '1rem' }}>
+                        <span className="badge" style={{ fontSize: '0.8rem', background: 'var(--primary)', color: 'white' }}>
+                          {note.exam_type === 'Class Note' ? 'Note' : (note.exam_type || 'Note')}
+                        </span>
+                      </td>
                       <td style={{ padding: '1rem' }}>{note.subject}</td>
+                      <td style={{ padding: '1rem' }}>{note.written_by}</td>
                       <td style={{ padding: '1rem' }}>{note.semester}</td>
                       <td style={{ padding: '1rem' }}>{new Date(note.created_at).toLocaleDateString()}</td>
                       <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
@@ -474,6 +522,13 @@ const Dashboard = () => {
                   ))}
                 </tbody>
               </table>
+              {notes.filter(n => {
+                const matchType = filterType === 'All' || n.exam_type === filterType;
+                const matchSem = filterSemester === 'All' || n.semester.toString() === filterSemester.toString();
+                return matchType && matchSem;
+              }).length === 0 && (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No notes found for this category.</div>
+              )}
             </div>
           )}
         </div>
