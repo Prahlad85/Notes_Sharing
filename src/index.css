@@ -482,3 +482,44 @@ a {
     transform: translateX(-100%);
   }
 }
+
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Tablet Responsive Adjustments */
+@media (max-width: 1024px) {
+  .search-container {
+    max-width: 250px;
+    /* Shrink search on tablets to make room */
+  }
+
+  .logo span {
+    display: none;
+    /* Hide logo text on tablets if needed, or keep it */
+  }
+}
+
+.nav-active-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary);
+  box-shadow: var(--shadow-sm);
+  margin-right: 0.5rem;
+  white-space: nowrap;
+  /* critical for preventing wrap */
+  flex-shrink: 0;
+  /* Critical for preventing squish */
+}

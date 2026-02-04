@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, AlertTriangle } from 'lucide-react';
+import { Layers, AlertTriangle, Users } from 'lucide-react';
 import SemesterCard from '../components/SemesterCard';
 import { supabase } from '../lib/supabaseClient';
 
@@ -8,6 +8,7 @@ const Home = () => {
   const [notice, setNotice] = useState(null);
   const [examNotes, setExamNotes] = useState([]);
   const [selectedExamGroup, setSelectedExamGroup] = useState(null); // 'MST1' | 'MST2' | 'Final Exam'
+  const [activeUsers, setActiveUsers] = useState(100);
 
   // Helper to group notes
   const getGroupedNotes = () => {
@@ -46,10 +47,51 @@ const Home = () => {
 
     fetchNotice();
     fetchExamNotes();
+
+    // Simulate Active Users: 100 + Random + 1 (Real User)
+    const updateActiveUsers = () => {
+      const randomUsers = Math.floor(Math.random() * 40) + 10; // Random between 10-50
+      setActiveUsers(100 + randomUsers + 1);
+    };
+    
+    updateActiveUsers(); // Initial set
+    const interval = setInterval(updateActiveUsers, 4000); // Update every 4s
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <div style={{ paddingTop: '80px' }}>
+      {/* Active Users Badge - Mobile Only */}
+      <div className="mobile-only" style={{
+        position: 'fixed',
+        top: '135px',
+        right: '10px',
+        zIndex: 40,
+        background: 'var(--bg-card)',
+        border: '1px solid var(--primary)',
+        padding: '0.5rem 1rem',
+        borderRadius: '999px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        boxShadow: 'var(--shadow-md)',
+        color: 'var(--text-main)',
+        fontWeight: '600',
+        fontSize: '0.9rem',
+        animation: 'fadeIn 0.5s ease-out'
+      }}>
+        <span style={{
+          display: 'block',
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          background: '#22c55e',
+          boxShadow: '0 0 8px #22c55e'
+        }}></span>
+        <Users size={18} style={{ color: 'var(--primary)' }} />
+        <span>{activeUsers} Active</span>
+      </div>
       {/* Notice Board Marquee */}
       {notice && (
         <div className="notice-board">

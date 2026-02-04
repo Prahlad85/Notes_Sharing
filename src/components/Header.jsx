@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard, Home } from 'lucide-react';
+import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard, Home, Users } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -12,6 +12,18 @@ const Header = () => {
   // const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Unused
   const navigate = useNavigate();
   const location = useLocation();
+  const [activeUsers, setActiveUsers] = useState(100);
+
+  // Active Users Simulation
+  useEffect(() => {
+    const updateActiveUsers = () => {
+      const randomUsers = Math.floor(Math.random() * 40) + 10;
+      setActiveUsers(100 + randomUsers + 1);
+    };
+    updateActiveUsers();
+    const interval = setInterval(updateActiveUsers, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Dark Mode Logic
   useEffect(() => {
@@ -155,9 +167,23 @@ const Header = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button onClick={toggleTheme} className="btn btn-ghost" style={{ padding: '0.5rem' }}>
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          {/* Active Users - Desktop/Tablet */}
+          <div className="desktop-only nav-active-badge">
+            <span style={{
+              display: 'block',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#22c55e',
+              boxShadow: '0 0 5px #22c55e'
+            }}></span>
+            <Users size={16} className="text-primary" style={{ color: 'var(--primary)' }} />
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
+              {activeUsers} Active
+            </span>
+          </div>
+
+          
           
           {user && (
             location.pathname === '/admin' ? (
@@ -170,6 +196,10 @@ const Header = () => {
               </Link>
             )
           )}
+          
+          <button onClick={toggleTheme} className="btn btn-ghost" style={{ padding: '0.5rem' }}>
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           
           {/* Admin link removed from here */}
         </div>
