@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -558,7 +558,7 @@ const Dashboard = () => {
           right: '20px',
           zIndex: 2000,
           background: 'var(--bg-card)',
-          border: `1px solid ${toast.type === 'success' ? '#22c55e' : '#ef4444'}`,
+          border: `1px solid ${toast.type === 'success' ? '#22c55e' : toast.type === 'loading' ? '#3b82f6' : '#ef4444'}`,
           borderRadius: '12px',
           padding: '1rem 1.5rem',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -572,16 +572,18 @@ const Dashboard = () => {
              width: '24px',
              height: '24px',
              borderRadius: '50%',
-             background: toast.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+             background: toast.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : toast.type === 'loading' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
              display: 'flex',
              alignItems: 'center',
              justifyContent: 'center',
-             color: toast.type === 'success' ? '#22c55e' : '#ef4444'
+             color: toast.type === 'success' ? '#22c55e' : toast.type === 'loading' ? '#3b82f6' : '#ef4444'
            }}>
-             {toast.type === 'success' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+             {toast.type === 'success' ? <CheckCircle size={14} /> : toast.type === 'loading' ? <Loader2 size={14} className="animate-spin" /> : <AlertCircle size={14} />}
            </div>
            <div>
-             <h4 style={{ fontSize: '0.9rem', margin: 0 }}>{toast.type === 'success' ? 'Success' : 'Error'}</h4>
+             <h4 style={{ fontSize: '0.9rem', margin: 0 }}>
+              {toast.type === 'success' ? 'Success' : toast.type === 'loading' ? 'Processing' : 'Error'}
+             </h4>
              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{toast.message}</p>
            </div>
            <button 
@@ -732,6 +734,7 @@ const NoticeManager = ({ showToast }) => {
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
+    showToast('Saving changes...', 'loading');
     
     // Upsert ID 1
     const { error } = await supabase.from('notices').upsert({
