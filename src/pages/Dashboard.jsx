@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -36,6 +36,14 @@ const Dashboard = () => {
   const [notes, setNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [editNote, setEditNote] = useState(null); // Note object being edited
+  
+  // Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+  };
 
   // Fetch notes on mount AND tab change to keep stats fresh
   useEffect(() => {
@@ -209,10 +217,12 @@ const Dashboard = () => {
 
       setNotes(notes.map(n => n.id === editNote.id ? editNote : n));
       setEditNote(null);
-      alert('Note updated successfully!');
+      setNotes(notes.map(n => n.id === editNote.id ? editNote : n));
+      setEditNote(null);
+      showToast('Note updated successfully!', 'success');
     } catch (error) {
       console.error('Update error:', error);
-      alert('Failed to update note.');
+      showToast('Failed to update note.', 'error');
     }
   };
 
@@ -442,31 +452,33 @@ const Dashboard = () => {
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <h3>Manage Notes</h3>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <select 
-                className="input-field" 
-                style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem' }}
-                onChange={(e) => setFilterSemester(e.target.value)}
-                value={filterSemester}
-              >
-                <option value="All">All Semesters</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                  <option key={num} value={num}>Sem {num}</option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ width: '200px' }}>
+                <CustomDropdown
+                  icon={Filter}
+                  value={filterSemester}
+                  onChange={setFilterSemester}
+                  options={[
+                    { value: 'All', label: 'All Semesters' },
+                    ...[1, 2, 3, 4, 5, 6, 7, 8].map(n => ({ value: n, label: `Semester ${n}` }))
+                  ]}
+                />
+              </div>
 
-              <select 
-                className="input-field" 
-                style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem' }}
-                onChange={(e) => setFilterType(e.target.value)}
-                value={filterType}
-              >
-                <option value="All">All Materials</option>
-                <option value="Class Note">Notes</option>
-                <option value="MST1">MST1 Papers</option>
-                <option value="MST2">MST2 Papers</option>
-                <option value="Final Exam">Final Exams</option>
-              </select>
+              <div style={{ width: '200px' }}>
+                <CustomDropdown
+                    icon={Filter}
+                    value={filterType}
+                    onChange={setFilterType}
+                    options={[
+                      { value: 'All', label: 'All Materials' },
+                      { value: 'Class Note', label: 'Notes' },
+                      { value: 'MST1', label: 'MST1 Papers' },
+                      { value: 'MST2', label: 'MST2 Papers' },
+                      { value: 'Final Exam', label: 'Final Exams' }
+                    ]}
+                  />
+              </div>
             </div>
           </div>
 
@@ -534,7 +546,51 @@ const Dashboard = () => {
         </div>
       ) : (
         /* NOTICE TAB */
-        <NoticeManager />
+        /* NOTICE TAB */
+        <NoticeManager showToast={showToast} />
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 2000,
+          background: 'var(--bg-card)',
+          border: `1px solid ${toast.type === 'success' ? '#22c55e' : '#ef4444'}`,
+          borderRadius: '12px',
+          padding: '1rem 1.5rem',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          minWidth: '300px'
+        }}>
+           <div style={{
+             width: '24px',
+             height: '24px',
+             borderRadius: '50%',
+             background: toast.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center',
+             color: toast.type === 'success' ? '#22c55e' : '#ef4444'
+           }}>
+             {toast.type === 'success' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+           </div>
+           <div>
+             <h4 style={{ fontSize: '0.9rem', margin: 0 }}>{toast.type === 'success' ? 'Success' : 'Error'}</h4>
+             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{toast.message}</p>
+           </div>
+           <button 
+             onClick={() => setToast(prev => ({ ...prev, show: false }))}
+             style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+           >
+             <X size={16} />
+           </button>
+        </div>
       )}
 
       {/* Edit Modal */}
@@ -656,7 +712,7 @@ const Dashboard = () => {
   );
 };
 
-const NoticeManager = () => {
+const NoticeManager = ({ showToast }) => {
   const [notice, setNotice] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -685,9 +741,9 @@ const NoticeManager = () => {
     });
 
     if (error) {
-      alert('Error updating notice');
+      showToast('Error updating notice', 'error');
     } else {
-      alert('Notice updated! It will appear on the marquee.');
+      showToast('Notice updated successfully!', 'success');
     }
     setLoading(false);
   };
@@ -726,3 +782,54 @@ const NoticeManager = () => {
 };
 
 export default Dashboard;
+
+// Custom Dropdown Component
+const CustomDropdown = ({ options, value, onChange, icon: Icon, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => o.value == value);
+  const label = selectedOption ? selectedOption.label : placeholder;
+
+  return (
+    <div className="relative" ref={dropdownRef} style={{ userSelect: 'none', position: 'relative' }}>
+       <div 
+        className="custom-dropdown-trigger" 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ borderColor: isOpen ? 'var(--primary)' : '' }}
+      >
+        {Icon && <Icon size={16} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />}
+        <span style={{ flex: 1 }}>{label}</span>
+        <ChevronDown size={16} style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+      </div>
+
+       {isOpen && (
+        <div className="custom-options-list">
+          {options.map((option) => (
+            <div 
+              key={option.value} 
+              className={`custom-option ${value == option.value ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {value == option.value && <CheckCircle size={14} style={{ color: 'var(--primary)' }} />}
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

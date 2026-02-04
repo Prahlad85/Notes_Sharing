@@ -106,7 +106,7 @@ const Home = () => {
 
         {/* Recent Exam Papers Section - Grouped */}
         {examNotes.length > 0 && (
-          <div style={{ marginBottom: '4rem' }}>
+          <div className="container" style={{ marginBottom: '4rem', marginTop: '2rem' }}>
             <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span role="img" aria-label="books">📚</span> Latest Exam Papers
             </h2>
@@ -142,11 +142,13 @@ const Home = () => {
           </div>
         )}
 
-        <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>Semester Notes</h2>
-        <div className="grid-cards">
-          {semesters.map((sem) => (
-            <SemesterCard key={sem} semester={sem} />
-          ))}
+        <div className="container" style={{ marginBottom: '4rem' }}>
+          <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>Semester Notes</h2>
+          <div className="grid-cards">
+            {semesters.map((sem) => (
+              <SemesterCard key={sem} semester={sem} />
+            ))}
+          </div>
         </div>
 
       {/* Exam Group Modal */}
