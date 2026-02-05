@@ -12,7 +12,8 @@ create table if not exists notes (
   semester integer not null,
   written_by text not null,
   file_url text not null,
-  exam_type text default 'Class Note'
+  exam_type text default 'Class Note',
+  is_pinned boolean default false
 );
 
 -- Ensure exam_type column exists (for existing tables)

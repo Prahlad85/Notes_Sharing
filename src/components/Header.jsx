@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard, Home, Users } from 'lucide-react';
+import { Search, GraduationCap, Sun, Moon, Menu, X, LayoutDashboard, Home, Users, Download } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -13,8 +13,9 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeUsers, setActiveUsers] = useState(100);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
-  // Active Users Simulation
+  // Active Users Simulation & PWA Prompt
   useEffect(() => {
     const updateActiveUsers = () => {
       const randomUsers = Math.floor(Math.random() * 40) + 10;
@@ -22,8 +23,28 @@ const Header = () => {
     };
     updateActiveUsers();
     const interval = setInterval(updateActiveUsers, 4000);
-    return () => clearInterval(interval);
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // Dark Mode Logic
   useEffect(() => {
@@ -184,7 +205,16 @@ const Header = () => {
           </div>
 
           
-          
+          {deferredPrompt && (
+             <button 
+               onClick={handleInstallClick}
+               className="btn btn-primary"
+               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+             >
+               <Download size={16} /> Install App
+             </button>
+          )}
+
           {user && (
             location.pathname === '/admin' ? (
               <Link to="/" className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter, Loader2, Pin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -190,12 +190,30 @@ const Dashboard = () => {
       }
 
       setNotes(notes.filter(n => n.id !== id));
-      // alert('Note deleted.'); // No alert needed with modal
+      showToast('Note deleted successfully!', 'success');
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete note.');
+      showToast('Failed to delete note.', 'error');
     } finally {
       setDeleteConfirm(null);
+    }
+  };
+
+  const togglePin = async (note) => {
+    try {
+      const newStatus = !note.is_pinned;
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_pinned: newStatus })
+        .eq('id', note.id);
+
+      if (error) throw error;
+
+      setNotes(notes.map(n => n.id === note.id ? { ...n, is_pinned: newStatus } : n));
+      showToast(newStatus ? 'Note Pinned!' : 'Note Unpinned', 'success');
+    } catch (error) {
+        console.error('Pin error', error);
+        showToast('Failed to update pin status. Ensure "is_pinned" column exists in DB.', 'error');
     }
   };
 
@@ -516,6 +534,14 @@ const Dashboard = () => {
                       <td style={{ padding: '1rem' }}>{note.semester}</td>
                       <td style={{ padding: '1rem' }}>{new Date(note.created_at).toLocaleDateString()}</td>
                       <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                          onClick={() => togglePin(note)}
+                          className={`btn ${note.is_pinned ? 'btn-primary' : 'btn-ghost'}`}
+                          style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title={note.is_pinned ? "Unpin Note" : "Pin Note"}
+                        >
+                          <Pin size={16} fill={note.is_pinned ? "currentColor" : "none"} />
+                        </button>
                         <button 
                           className="btn btn-ghost"
                           onClick={() => setEditNote(note)}
