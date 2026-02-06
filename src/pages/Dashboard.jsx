@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Upload, FileText, CheckCircle, AlertCircle, Trash2, Edit2, X, Home, LogOut, ChevronDown, Filter, Loader2, Pin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const Dashboard = () => {
+const Dashboard = ({ role }) => {
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'manage'
   const [uploading, setUploading] = useState(false);
   // ... (rest of state)
@@ -139,6 +139,7 @@ const Dashboard = () => {
               semester: parseInt(formData.semester),
               exam_type: formData.exam_type || 'Class Note', // Save Exam Type
               file_url: publicUrl,
+              user_id: session.user.id,
             },
           ]);
 
@@ -331,6 +332,15 @@ const Dashboard = () => {
         >
           <AlertCircle size={18} /> Notices
         </button>
+        {role === 'super_admin' && (
+          <button 
+            className={`btn ${activeTab === 'admins' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('admins')}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            <Users size={18} /> Admins
+          </button>
+        )}
       </div>
 
       {activeTab === 'upload' ? (
@@ -570,8 +580,9 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+      ) : activeTab === 'admins' ? (
+        <AdminManager showToast={showToast} />
       ) : (
-        /* NOTICE TAB */
         /* NOTICE TAB */
         <NoticeManager showToast={showToast} />
       )}
@@ -811,6 +822,135 @@ const NoticeManager = ({ showToast }) => {
 };
 
 export default Dashboard;
+
+const AdminManager = ({ showToast }) => {
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('*')
+      .neq('id', session.user.id); // Don't show self
+
+    if (error) console.error(error);
+    else setAdmins(data || []);
+    setLoading(false);
+  };
+
+  const updateRole = async (id, updates) => {
+    const { error } = await supabase
+      .from('user_roles')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      showToast('Error updating admin', 'error');
+    } else {
+      setAdmins(admins.map(a => a.id === id ? { ...a, ...updates } : a));
+      showToast('Admin updated successfully!', 'success');
+    }
+  };
+
+  const deleteAllContent = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete ALL notes uploaded by this user? This cannot be undone.')) return;
+
+    showToast('Deleting content...', 'loading');
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) {
+      showToast('Error deleting content', 'error');
+      console.error(error);
+    } else {
+      showToast('All notes by this user deleted.', 'success');
+    }
+  };
+
+  return (
+    <div className="glass-panel" style={{ padding: '2rem' }}>
+      <h3 style={{ marginBottom: '1.5rem' }}>Manage Admins</h3>
+      
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '2rem' }}><Loader2 className="animate-spin" /></div>
+      ) : admins.length === 0 ? (
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No other admins found.</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                <th style={{ padding: '1rem' }}>Email</th>
+                <th style={{ padding: '1rem' }}>Status</th>
+                <th style={{ padding: '1rem' }}>Joined</th>
+                <th style={{ padding: '1rem' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {admins.map(admin => (
+                <tr key={admin.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem' }}>
+                    <div style={{ fontWeight: '500' }}>{admin.email}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: {admin.id.substring(0, 8)}...</div>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {admin.is_blocked ? (
+                      <span className="badge" style={{ background: '#ef4444', color: 'white' }}>Blocked</span>
+                    ) : admin.role === 'pending' ? (
+                       <span className="badge" style={{ background: '#f59e0b', color: 'black' }}>Pending</span>
+                    ) : (
+                       <span className="badge" style={{ background: '#22c55e', color: 'white' }}>Active</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>{new Date(admin.created_at).toLocaleDateString()}</td>
+                  <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {/* Approve Button */}
+                    {admin.role === 'pending' && (
+                      <button 
+                         onClick={() => updateRole(admin.id, { role: 'admin' })}
+                         className="btn btn-sm btn-primary"
+                      >
+                         Approve
+                      </button>
+                    )}
+                    
+                    {/* Block/Unblock Button */}
+                    <button 
+                       onClick={() => updateRole(admin.id, { is_blocked: !admin.is_blocked })}
+                       className={`btn btn-sm ${admin.is_blocked ? 'btn-outline' : 'btn-danger'}`}
+                    >
+                       {admin.is_blocked ? 'Unblock' : 'Block'}
+                    </button>
+
+                    {/* Delete Content Button */}
+                    <button 
+                       onClick={() => deleteAllContent(admin.id)}
+                       className="btn btn-sm btn-ghost"
+                       style={{ color: '#ef4444' }}
+                       title="Delete all notes by this user"
+                    >
+                       <Trash2 size={16} /> Content
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Custom Dropdown Component
 const CustomDropdown = ({ options, value, onChange, icon: Icon, placeholder }) => {
