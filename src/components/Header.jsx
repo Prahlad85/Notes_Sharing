@@ -19,7 +19,7 @@ const Header = () => {
   useEffect(() => {
     const updateActiveUsers = () => {
       const randomUsers = Math.floor(Math.random() * 40) + 10;
-      setActiveUsers(100 + randomUsers + 1);
+      setActiveUsers(70 + randomUsers + 1);
     };
     updateActiveUsers();
     const interval = setInterval(updateActiveUsers, 4000);
