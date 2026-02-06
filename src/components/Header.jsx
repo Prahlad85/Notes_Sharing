@@ -113,9 +113,18 @@ const Header = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const handleResultClick = (fileUrl) => {
-    window.open(fileUrl, '_blank');
+  const handleResultClick = (note) => {
+    // Dispatch a custom event that Home.jsx listens to
+    const event = new CustomEvent('open-note-modal', { detail: note });
+    window.dispatchEvent(event);
     setSearchTerm('');
+    
+    // Also navigate to home if not there, to ensure the modal can be shown (since the listener is likely in Home)
+    if (location.pathname !== '/') {
+      navigate('/');
+      // Small delay to allow navigation to complete and component to mount/listen
+      setTimeout(() => window.dispatchEvent(event), 100);
+    }
   };
 
   // Helper to highlight text
@@ -166,7 +175,7 @@ const Header = () => {
                 results.map(note => (
                   <div 
                     key={note.id}
-                    onClick={() => handleResultClick(note.file_url)}
+                    onClick={() => handleResultClick(note)}
                     style={{
                       padding: '0.75rem',
                       cursor: 'pointer',

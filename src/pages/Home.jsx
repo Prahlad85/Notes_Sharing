@@ -10,6 +10,7 @@ const Home = () => {
   const [selectedExamGroup, setSelectedExamGroup] = useState(null); // 'MST1' | 'MST2' | 'Final Exam'
   const [activeUsers, setActiveUsers] = useState(100);
   const [viewNote, setViewNote] = useState(null); // For PDF/Image Preview Modal
+  const [iframeLoading, setIframeLoading] = useState(true);
   const [pinnedNotes, setPinnedNotes] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
 
@@ -24,6 +25,7 @@ const Home = () => {
   // Save to history when viewing a note
   const handleViewNote = (note) => {
     setViewNote(note);
+    setIframeLoading(true);
     // Add to history (avoid duplicates, keep max 5)
     setRecentNotes(prev => {
       const filtered = prev.filter(n => n.id !== note.id);
@@ -31,6 +33,20 @@ const Home = () => {
       localStorage.setItem('recentReads', JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const removeFromHistory = (e, noteId) => {
+    e.stopPropagation();
+    setRecentNotes(prev => {
+      const updated = prev.filter(n => n.id !== noteId);
+      localStorage.setItem('recentReads', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const clearHistory = () => {
+    setRecentNotes([]);
+    localStorage.removeItem('recentReads');
   };
 
   // Helper to group notes
@@ -90,7 +106,20 @@ const Home = () => {
     updateActiveUsers(); // Initial set
     const interval = setInterval(updateActiveUsers, 4000); // Update every 4s
 
-    return () => clearInterval(interval);
+    // Event Listener for Header Search
+    const handleOpenNoteModal = (e) => {
+      const note = e.detail;
+      if (note) {
+        handleViewNote(note);
+      }
+    };
+    
+    window.addEventListener('open-note-modal', handleOpenNoteModal);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('open-note-modal', handleOpenNoteModal);
+    };
   }, []);
 
   return (
@@ -176,31 +205,62 @@ const Home = () => {
       {/* Continue Reading Section */}
       {recentNotes.length > 0 && (
          <div className="container" style={{ marginTop: '2rem' }}>
-           <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-             <Clock size={20} /> Continue Reading
-           </h2>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+             <h2 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+               <Clock size={20} /> Continue Reading
+             </h2>
+             <button 
+               onClick={clearHistory}
+               className="btn btn-ghost"
+               style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.2rem 0.6rem', height: 'auto' }}
+             >
+               Remove All
+             </button>
+           </div>
+           
            <div style={{ paddingBottom: '1rem', overflowX: 'auto', display: 'flex', gap: '1rem' }}>
              {recentNotes.map(note => (
                <div 
                  key={note.id} 
                  className="glass-panel"
                  style={{ 
-                   minWidth: '250px', 
+                   minWidth: '300px', 
                    padding: '1rem', 
                    display: 'flex', 
                    alignItems: 'center', 
                    gap: '1rem',
                    cursor: 'pointer',
-                   border: '1px solid var(--border-color)'
+                   border: '1px solid var(--border-color)',
+                   position: 'relative'
                  }}
                  onClick={() => handleViewNote(note)}
                >
-                 <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                 <button 
+                   onClick={(e) => removeFromHistory(e, note.id)}
+                   className="btn btn-ghost"
+                   style={{ 
+                     position: 'absolute', 
+                     top: '5px', 
+                     right: '5px', 
+                     padding: '4px', 
+                     height: '24px', 
+                     width: '24px',
+                     borderRadius: '50%',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     background: 'rgba(0,0,0,0.1)'
+                   }}
+                 >
+                   <X size={14} />
+                 </button>
+
+                 <div style={{ minWidth: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                    <BookOpen size={20} color="var(--primary)" />
                  </div>
-                 <div>
-                   <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{note.subject}</h4>
-                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Resume Reading</p>
+                 <div style={{ flex: 1, minWidth: 0 }}>
+                   <h4 style={{ margin: 0, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{note.subject}</h4>
+                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Resume Reading</p>
                  </div>
                </div>
              ))}
@@ -356,18 +416,26 @@ const Home = () => {
              </div>
              
              {/* PDF/Image Container */}
+             {/* PDF/Image Container */}
              <div style={{ flex: 1, background: '#1a1a1a', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               {iframeLoading && (
+                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                   <div className="loading-spinner"></div>
+                 </div>
+               )}
                {viewNote.file_url.toLowerCase().endsWith('.pdf') ? (
                  <iframe 
                    src={viewNote.file_url} 
-                   style={{ width: '100%', height: '100%', border: 'none' }}
+                   style={{ width: '100%', height: '100%', border: 'none', opacity: iframeLoading ? 0 : 1, transition: 'opacity 0.3s' }}
                    title="Preview"
+                   onLoad={() => setIframeLoading(false)}
                  />
                ) : (
                  <img 
                    src={viewNote.file_url} 
                    alt="Preview" 
-                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: iframeLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+                   onLoad={() => setIframeLoading(false)}
                  />
                )}
              </div>

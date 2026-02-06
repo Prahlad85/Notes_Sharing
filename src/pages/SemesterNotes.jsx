@@ -10,6 +10,22 @@ const SemesterNotes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewNote, setViewNote] = useState(null);
+  const [iframeLoading, setIframeLoading] = useState(true);
+
+  const handleViewNote = (note) => {
+    setViewNote(note);
+    setIframeLoading(true);
+    
+    try {
+      const saved = localStorage.getItem('recentReads');
+      let currentHistory = saved ? JSON.parse(saved) : [];
+      currentHistory = currentHistory.filter(n => n.id !== note.id);
+      const updated = [note, ...currentHistory].slice(0, 5);
+      localStorage.setItem('recentReads', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -59,12 +75,11 @@ const SemesterNotes = () => {
       ) : (
         <div className="grid-cards">
           {notes.map((note) => (
-            <NoteCard key={note.id} note={note} onView={(n) => setViewNote(n)} />
+            <NoteCard key={note.id} note={note} onView={handleViewNote} />
           ))}
         </div>
       )}
 
-      {/* PDF View Modal */}
       {viewNote && (
         <div style={{
           position: 'fixed',
@@ -98,35 +113,38 @@ const SemesterNotes = () => {
                   <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{viewNote.subject}</h3>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>By {viewNote.written_by}</p>
                </div>
-               <button 
-                 onClick={() => setViewNote(null)}
-                 className="btn btn-ghost"
-                 style={{ 
-                   width: '40px', 
-                   height: '40px', 
-                   display: 'flex', 
-                   alignItems: 'center', 
-                   justifyContent: 'center',
-                   borderRadius: '50%' 
-                 }}
-               >
-                 <X size={24} />
-               </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                   <a href={viewNote.file_url} download className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={e => e.stopPropagation()}>Download</a>
+                   <button 
+                    onClick={() => setViewNote(null)}
+                    className="btn btn-ghost"
+                    style={{ padding: '0.5rem', borderRadius: '50%' }}
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
              </div>
              
              {/* PDF/Image Container */}
-             <div style={{ flex: 1, background: '#333', position: 'relative', overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <div style={{ flex: 1, background: '#333', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               {iframeLoading && (
+                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                   <div className="loading-spinner"></div>
+                 </div>
+               )}
                {viewNote.file_url.toLowerCase().endsWith('.pdf') ? (
                  <iframe 
                    src={viewNote.file_url} 
-                   style={{ width: '100%', height: '100%', border: 'none' }}
+                   style={{ width: '100%', height: '100%', border: 'none', opacity: iframeLoading ? 0 : 1, transition: 'opacity 0.3s' }}
                    title="PDF Preview"
+                   onLoad={() => setIframeLoading(false)}
                  />
                ) : (
                  <img 
                    src={viewNote.file_url} 
                    alt="Note Preview" 
-                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: iframeLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+                   onLoad={() => setIframeLoading(false)}
                  />
                )}
              </div>
